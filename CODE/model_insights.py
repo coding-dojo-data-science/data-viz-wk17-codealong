@@ -29,14 +29,37 @@ def summarize_df(df_):
 ############################### FROM: FEATURE IMPORTANCE ###################################
 ############################################################################################
 
-def evaluate_regression(model, X_train,y_train, X_test, y_test): 
-    """Evaluates a scikit learn regression model using r-squared and RMSE
-    Source: Feature Importance Lesson: https://login.codingdojo.com/m/0/13079/97711
+# def evaluate_regression(model, X_train,y_train, X_test, y_test): 
+#     """Evaluates a scikit learn regression model using r-squared and RMSE
+#     Source: Feature Importance Lesson: https://login.codingdojo.com/m/0/13079/97711
     
-    Example Usage:
-    >> reg = RandomForestRegressor()
-    >> reg.fit(X_train_df,y_train)
-    >> evaluate_regression(reg, X_train_df, y_train, X_test_df, y_test)
+#     Example Usage:
+#     >> reg = RandomForestRegressor()
+#     >> reg.fit(X_train_df,y_train)
+#     >> evaluate_regression(reg, X_train_df, y_train, X_test_df, y_test)
+#     """
+    
+#     ## Training Data
+#     y_pred_train = model.predict(X_train)
+#     r2_train = metrics.r2_score(y_train, y_pred_train)
+#     rmse_train = metrics.mean_squared_error(y_train, y_pred_train, 
+#                                             squared=False)
+    
+#     print(f"Training Data:\tR^2= {r2_train:.2f}\tRMSE= {rmse_train:.2f}")
+        
+    
+#     ## Test Data
+#     y_pred_test = model.predict(X_test)
+#     r2_test = metrics.r2_score(y_test, y_pred_test)
+#     rmse_test = metrics.mean_squared_error(y_test, y_pred_test, 
+#                                             squared=False)
+    
+#     print(f"Test Data:\tR^2= {r2_test:.2f}\tRMSE= {rmse_test:.2f}")
+
+
+def evaluate_regression(model, X_train,y_train, X_test, y_test,for_slides=True): 
+    """Evaluates a scikit learn regression model using r-squared and RMSE
+    if as_frame = True, displays results as dataframe.
     """
     
     ## Training Data
@@ -44,17 +67,28 @@ def evaluate_regression(model, X_train,y_train, X_test, y_test):
     r2_train = metrics.r2_score(y_train, y_pred_train)
     rmse_train = metrics.mean_squared_error(y_train, y_pred_train, 
                                             squared=False)
+    mae_train = metrics.mean_absolute_error(y_train, y_pred_train)
     
-    print(f"Training Data:\tR^2= {r2_train:.2f}\tRMSE= {rmse_train:.2f}")
-        
-    
+
     ## Test Data
     y_pred_test = model.predict(X_test)
     r2_test = metrics.r2_score(y_test, y_pred_test)
     rmse_test = metrics.mean_squared_error(y_test, y_pred_test, 
                                             squared=False)
+    mae_test = metrics.mean_absolute_error(y_test, y_pred_test)
     
-    print(f"Test Data:\tR^2= {r2_test:.2f}\tRMSE= {rmse_test:.2f}")
+    if for_slides:
+        df_version =[['Split','R^2','MAE','RMSE']]
+        df_version.append(['Train',r2_train, mae_train, rmse_train])
+        df_version.append(['Test',r2_test, mae_test, rmse_test])
+        df_results = pd.DataFrame(df_version[1:], columns=df_version[0])
+        df_results = df_results.round(2)
+        display(df_results.style.hide(axis='index').format(precision=2, thousands=','))
+        
+    else: 
+        print(f"Training Data:\tR^2 = {r2_train:,.2f}\tRMSE = {rmse_train:,.2f}\tMAE = {mae_train:,.2f}")
+        print(f"Test Data:\tR^2 = {r2_test:,.2f}\tRMSE = {rmse_test:,.2f}\tMAE = {mae_test:,.2f}")
+
 
 
 
@@ -511,3 +545,62 @@ def plot_coeffs_color(coeffs, top_n=None,  figsize=(8,6), color_dict=None,
     
     ## return ax in case want to continue to update/modify figure
     return ax
+
+
+
+
+
+## ADMIN VERSION 
+def evaluate_classification_admin(model, X_train=None,y_train=None,X_test=None,y_test=None,
+                            normalize='true',cmap='Blues', label= ': (Admin)', figsize=(10,5)):
+    header="\tCLASSIFICATION REPORT " + label
+    dashes='--'*40
+    print(f"{dashes}\n{header}\n{dashes}")
+    
+    if (X_train is None) & (X_test is None):
+        raise Exception("Must provide at least X_train & y_train or X_test and y_test")
+    
+    if (X_train is not None) & (y_train is not None):
+        ## training data
+        print(f"[i] Training Data:")
+        y_pred_train = model.predict(X_train)
+        report_train = metrics.classification_report(y_train, y_pred_train)
+        print(report_train)
+
+        fig,ax = plt.subplots(figsize=figsize,ncols=2)
+        metrics.ConfusionMatrixDisplay.from_estimator(model,X_train,y_train,
+                                                      normalize=normalize, 
+                                                      cmap=cmap,ax=ax[0])
+        try:
+            metrics.RocCurveDisplay.from_estimator(model,X_train,y_train,ax=ax[1])
+            ax[1].plot([0,1],[0,1],ls=':')
+            ax[1].grid()
+        except:
+            fig.delaxes(ax[1])
+        fig.tight_layout()
+
+        plt.show()
+
+    
+        print(dashes)
+
+        
+    if (X_test is not None) & (y_test is not None):
+        ## training data
+        print(f"[i] Test Data:")
+        y_pred_test = model.predict(X_test)
+        report_test = metrics.classification_report(y_test, y_pred_test)
+        print(report_test)
+
+        fig,ax = plt.subplots(figsize=figsize,ncols=2)
+        metrics.ConfusionMatrixDisplay.from_estimator(model,X_test,y_test,
+                                                      normalize=normalize, 
+                                                      cmap=cmap, ax=ax[0])
+        try:
+            metrics.RocCurveDisplay.from_estimator(model,X_test,y_test,ax=ax[1])
+            ax[1].plot([0,1],[0,1],ls=':')
+            ax[1].grid()
+        except:
+            fig.delaxes(ax[1])
+        fig.tight_layout()
+        plt.show()
